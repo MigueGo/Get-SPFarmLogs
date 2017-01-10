@@ -1,4 +1,4 @@
-######################################################################################################
+﻿######################################################################################################
         #        This script is entended to gather farm logs                                 #
         #        it will get logs from ULS , IIS based on date and EventViewer Application   #
         #        and System.                                                                 #
@@ -77,7 +77,7 @@ Import-Module webadministration
 
 }
 catch{
-	$error[0]
+	$Error[0].Exception.Message
 }
 
 
@@ -147,19 +147,41 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                         {
                                             #($Website.logFile.directory)
                                             $logFilefolder="$($Website.logFile.directory)\W3SVC$($website.id)".replace("%SystemDrive%",$env:SystemDrive)
-                                            
+                                            $website.name;
                                             #testing
                                             $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" 
                                             $files.Count
                                                                                       
                                             if((Test-Path -Path $logFilefolder) -and ($files.count -gt 0)){
                                             
+                                            #retrive the folder represented by the IIS site ID 
                                             $folder =Split-Path -Path $logFilefolder -Leaf
                                             $folder
 
-                                            Copy-Item -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
+                                            #create the destination folder 
+
+                                            $destf = ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder)
+                                            
+                                            
+                                            
+                                            New-Item -Path $destf -Force -ItemType:directory
+                                            $destf;
+                                            
+
+                                            # copy all the files matching the willcard in $IISdate
+                                            if($destf){
+                                            foreach($fichier in $files.FullName){
+                                            
+                                            # previous but with bug due to multiple copies in second execution 
+                                            #Copy-Item -Path $logFilefolder -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
+                                            
+                                            Copy-Item $fichier -Destination $destf -Force -Container:$false;
+
+                                            }
+                                            }
+
                                             $h.ForegroundColor="green";
-                                            Write-Host " ... end $website.name ";
+                                            Write-Host(" ... end " + $website.name);
                                             $h.ForegroundColor="gray";
                                             }
                                             else{"no entries for this IIS site " + $website.name}
@@ -173,11 +195,23 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                }
                                else
                                {
+                                    # this part should be change to invoke-command -ComputerName wfm -ScriptBlock {get-website} but we need to validate the remote powershell 
+                                    $Session = New-PSSession -ComputerName $server
+
+                                    $block = { 
+                                        Import-Module 'webAdministration'
+                                        get-website
+                                    }
+
+                                    $rsites =Invoke-Command -Session $Session -ErrorAction SilentlyContinue -ScriptBlock $block;    
+
+                                    $rsites  |select name
                                     
-                                    foreach($WebSite in $(get-website))
+                                    foreach($WebSite in $rsites)
 
                                         {
                                             #($Website.logFile.directory)
+                                           
 
                                             # to be handled later if we are running the script APP servers where IIS sites are not existing we will not get the expected logs !!
                                             # for now the script need to be run in server with WFE role
@@ -247,7 +281,7 @@ function GetMergedUlsLOgs(){
                 }
     catch {
                 $h.ForegroundColor="red"
-                throw "$error[0]"
+                throw "$Error[0].Exception.Message"
                 Write-Host("check the date format ... ") 
 	}
     
@@ -311,11 +345,12 @@ foreach($server in $srvs){
                 else{}
             
           }
-          catch{throw "$error[0]"}
+          catch{throw "$Error[0].Exception.Message"}
 	  
 
 }
 
+function mdb{$Error.Clear()}
 
 # Merge ULS logs	
   
