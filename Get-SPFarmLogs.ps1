@@ -3,8 +3,8 @@
         #        it will get logs from ULS , IIS based on date and EventViewer Application   #
         #        and System.                                                                 #
 		#        Version 2.0                                                                 #
-        #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 12/08/2014 #
-		# 		 last modification : 10 september 2015                                       #
+        #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 06/01/2017 #
+		# 		 last modification : 10/01/2017                                              #
 ######################################################################################################
 <#
 example
@@ -128,7 +128,7 @@ function GetEventsLogsSystem ([string]$server, [Management.Automation.PSCredenti
 function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$credential)
 {
                 $h.ForegroundColor="yellow";
-                Write-Host("Getting IIS logs from $_");
+                Write-Host("Getting IIS logs from $server");
                 if(!(Test-Connection -Quiet $server -Count 5)) {
                                throw "[$server] connection not available";
                 }
@@ -217,11 +217,13 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                             # for now the script need to be run in server with WFE role
 
                                             $logFilefolder="$($Website.logFile.directory)\W3SVC$($website.id)".replace("%SystemDrive%",$env:SystemDrive)
-                                            
+                                            $logFilefolder
                                             #testing
                                             $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" 
                                             $files.Count
-                                                                                      
+                                            
+											# we need to test the network path not local path todo ==> 
+											
                                             if((Test-Path -Path $logFilefolder) -and ($files.count -gt 0)){
                                             
                                             $netfolder = Split-Path -Path $logFilefolder -noQualifier
@@ -229,15 +231,29 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                             $folder =Split-Path -Path $logFilefolder -Leaf
                                             $folder
                                             
-                                            #Copy-Item -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
+                                            
 
                                             $destpath = ("\\" + ($server + "\C$" + $netfolder));
                                             $destpath
                                             Test-Path -Path $destpath
                                             try{
                                             if(Test-Path -Path $destpath){
-                                            Copy-Item -Path $destpath -Recurse -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
+
+
+                                            #Copy-Item -Path $destpath -Recurse -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
+                                            foreach($fichier in $files){
+                                            
+                                            # previous but with bug due to multiple copies in second execution 
+                                            #Copy-Item -Path $logFilefolder -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
+                                            
+                                            Copy-Item $fichier.FullName -Destination $destpath -Force -Container:$false;
+
                                             }
+                                            
+                                            
+                                            }
+                                            
+                                            
                                             else{}
                                             }
                                             catch{}
