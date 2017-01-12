@@ -21,19 +21,19 @@ param (
 
 	[Parameter(Mandatory=$false)]
     [string]
-    $NoEvents=$true
+    $NoEvents=$false
     ,
     [parameter(Mandatory=$false)]
     [string] 
-    $user="contoso\spsvc"
+    $user=""
     ,
     [Parameter(Mandatory=$false)]
     [string] 
-    $EventsDir="C:\share\_get-spfarmlogs\logs"
+    $EventsDir=""
     ,
     [Parameter(Mandatory=$false)]
     [string]
-    $IISdate="161208"
+    $IISdate=$null
     , 
     [Parameter(Mandatory=$false)]
     [string]
@@ -48,7 +48,7 @@ param (
     $servers=""
     
 )
-
+$Error.Clear();
 $h=(Get-Host).UI.RawUI
 $h.ForegroundColor="DarkYellow"
 write-host("There is a syntax example");
@@ -56,12 +56,7 @@ write-host('get-spfarmlogs.ps1 -user "contoso\admincc" -eventsdir C:\collectfarm
 $h.BackgroundColor="black"
 $h.ForegroundColor="green"
 
-#$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
-
-$password= ConvertTo-SecureString “Access1” -AsPlainText -Force
-
-$user="contoso\spsvc"
-
+$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
 $credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $user, $password
 $h.ForegroundColor="gray"
 
@@ -134,154 +129,101 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                 }
                 try {
                                
-                               #real one
+                               
                                if ($server -eq $env:COMPUTERNAME) 
-                               #testing
-                               #if ($server -eq "totot") 
+                                
                                {
-                                    
-                                    
-                                    
-                                        foreach($WebSite in $(get-website))
+                                    foreach($WebSite in $(get-website))
 
                                         {
-                                            #($Website.logFile.directory)
-                                            $logFilefolder="$($Website.logFile.directory)\W3SVC$($website.id)".replace("%SystemDrive%",$env:SystemDrive)
-                                            $website.name;
-                                            #testing
-                                            $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" 
-                                            $files.Count
-                                                                                      
-                                            if((Test-Path -Path $logFilefolder) -and ($files.count -gt 0)){
                                             
+                                            $logFilefolder="$($Website.logFile.directory)\W3SVC$($website.id)".replace("%SystemDrive%",$env:SystemDrive);
+                                            $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" 
+                                            if((Test-Path -Path $logFilefolder) -and ($files.count -gt 0)){
                                             #retrive the folder represented by the IIS site ID 
                                             $folder =Split-Path -Path $logFilefolder -Leaf
-                                            $folder
-
                                             #create the destination folder 
-
                                             $destf = ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder)
-                                            
-                                            
-                                            
-                                            New-Item -Path $destf -Force -ItemType:directory
-                                            $destf;
-                                            
-
+                                            New-Item -Path $destf -Force -ItemType:directory | Out-Null;
                                             # copy all the files matching the willcard in $IISdate
                                             if($destf){
-                                            foreach($fichier in $files.FullName){
-                                            
-                                            # previous but with bug due to multiple copies in second execution 
-                                            #Copy-Item -Path $logFilefolder -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
-                                            
-                                            Copy-Item $fichier -Destination $destf -Force -Container:$false;
-
-                                            }
+                                                foreach($fichier in $files.FullName){
+                                                    Copy-Item $fichier -Destination $destf -Force -Container:$false;
+                                                   
+                                                }
                                             }
 
                                             $h.ForegroundColor="green";
-                                            Write-Host(" ... end " + $website.name);
-                                            $h.ForegroundColor="gray";
+                                            Write-Host(" done for site " + $website.name);
+                                            Write-Host("-------//-------");
+                                            $h.ForegroundColor="green";
                                             }
-                                            else{"no entries for this IIS site " + $website.name}
+                                            else{"no entries for the site " + $website.name;Write-Host("-------//-------");}
   
                                         } 
-
-                                    
-                                    
-                                    
 
                                }
                                else
                                {
-                                    # this part should be change to invoke-command -ComputerName wfm -ScriptBlock {get-website} but we need to validate the remote powershell 
+                                    # we need to check if remote powershell is possible to the remote server
+                                    Write-Host -ForegroundColor White " - Enabling WSManCredSSP for `"$server`""
+                                    Enable-WSManCredSSP -Role Client -Force -DelegateComputer $server | Out-Null ;
+                                    #If (!$?) {Pause "exit"; throw $_}
                                     $Session = New-PSSession -ComputerName $server
-
+                                    # only retrive the data really need to avoid to exceed the buffer 
                                     $block = { 
-                                        Import-Module 'webAdministration'
-                                        get-website
+                                        Import-Module 'webAdministration' -ErrorAction 0;
+                                        get-website | %{($_.name + ";" + $_.id + ";" +  $_.logFile.directory)}
                                     }
-
-                                    $rsites =Invoke-Command -Session $Session -ErrorAction SilentlyContinue -ScriptBlock $block;    
-
-                                    $rsites  |select name
-                                    
-                                    foreach($WebSite in $rsites)
-
-                                        {
-                                            #($Website.logFile.directory)
-                                           
-
-                                            # to be handled later if we are running the script APP servers where IIS sites are not existing we will not get the expected logs !!
-                                            # for now the script need to be run in server with WFE role
-
-                                            $logFilefolder="$($Website.logFile.directory)\W3SVC$($website.id)".replace("%SystemDrive%",$env:SystemDrive)
-                                            $logFilefolder
-                                            #testing
-                                            $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" 
-                                            $files.Count
+                                    $rsites = Invoke-Command -Session $Session -ScriptBlock $block; 
+                                    #Get-PSSession| %{ Remove-PSSession -Session $_ }
+                                    foreach($WebSite in $rsites){
                                             
-											# we need to test the network path not local path todo ==> 
-											
-                                            if((Test-Path -Path $logFilefolder) -and ($files.count -gt 0)){
-                                            
-                                            $netfolder = Split-Path -Path $logFilefolder -noQualifier
-
-                                            $folder =Split-Path -Path $logFilefolder -Leaf
-                                            $folder
+                                            $line = $WebSite.split(';');
+                                            $logFilefolder="$($line[2])\W3SVC$($line[1])".replace("%SystemDrive%",$env:SystemDrive)
+                                            $netfolder = Split-Path -Path $logFilefolder -noQualifier;
+                                            $folder =Split-Path -Path $logFilefolder -Leaf;
+                                            $sourcepath = ("\\" + ($server + "\C$" + $netfolder));
+                                            #[bool]([System.Uri]$sourcepath).IsUnc
+                                            $files = get-childItem -Path $sourcepath -Recurse -Filter "*$IISdate*.log" ;
+                                            if((Test-Path -Path $sourcepath) -and ($files.count -gt 0)){
+                                                
+                                                $destf = ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder);
+                                                #Create the destination folder with W3SVC and site ID
+                                                New-Item -Path $destf -Force -ItemType:directory| Out-Null;
+                                                try{
+                                                    if(Test-Path -Path $destpath){
+                                                        foreach($fichier in $files){
+                                                            Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
+                                                        }
+                                                }
                                             
                                             
-
-                                            $destpath = ("\\" + ($server + "\C$" + $netfolder));
-                                            $destpath
-                                            Test-Path -Path $destpath
-                                            try{
-                                            if(Test-Path -Path $destpath){
-
-
-                                            #Copy-Item -Path $destpath -Recurse -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
-                                            foreach($fichier in $files){
                                             
-                                            # previous but with bug due to multiple copies in second execution 
-                                            #Copy-Item -Path $logFilefolder -Filter "*$IISdate*.log" -Destination ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder) -Force -Container: $false;
-                                            
-                                            Copy-Item $fichier.FullName -Destination $destpath -Force -Container:$false;
-
-                                            }
-                                            
-                                            
-                                            }
-                                            
-                                            
-                                            else{}
                                             }
                                             catch{}
                                             Start-Sleep 2;
-
                                             $h.ForegroundColor="green";
-                                            Write-Host( " ... end " + ($WebSite.name).ToString());
-                                            $h.ForegroundColor="gray";
+                                            Write-Host( " done for site " + ($line[0]).ToString());
+                                            Write-Host("------//------")
+                                            $h.ForegroundColor="green";
                                             }
-                                            else{"no entries for this IIS site " + $website.name}
+                                            else{"no entries for the site " + $line[0];Write-Host("-------//-------");}
   
-                                        } ;                                    
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    
+                                        }                                     
                                     $h.ForegroundColor="green";
-                                    Write-Host " ... end server $server";
-                                    $h.ForegroundColor="gray";
+                                    Write-Host( " ... end server $server");
+                                    Write-Host("-------//-------");
+                                    $h.ForegroundColor="green";
+                                    Remove-PSSession -Session $Session
+                                    
                                }
                 }
                 catch 
                 {
                                $h.ForegroundColor="red"
-                               throw "[GetIISlogs][$server] (Ligne $($_.InvocationInfo.ScriptLineNumber)) $_"
+                               throw "$Error[0].Exception.Message"
+                               Remove-PSSession -Session $Session
                 }
                 
 }
@@ -291,16 +233,19 @@ function GetMergedUlsLOgs(){
     $stime = $ULSstarttime -as [DateTime];
     $etime = $ULSendtime -as [DateTime];
     $mtime= get-date -Format d_M_HH_mm_ss
-    
+    if($stime -and $etime){
     Try{
-                Merge-SPLogFile -Path "$EventsDir\FarmMergedLog_$mtime.log" -Overwrite -starttime ($stime).tostring() -endtime ($etime).tostring() 
+                
+
+            Merge-SPLogFile -Path "$EventsDir\FarmMergedLog_$mtime.log" -Overwrite -starttime ($stime).tostring() -endtime ($etime).tostring() 
                 }
     catch {
                 $h.ForegroundColor="red"
                 throw "$Error[0].Exception.Message"
                 Write-Host("check the date format ... ") 
 	}
-    
+    }
+    else{Write-Host("It's not possible to run the Merge-SPLogFile, please check the date format ... ")}
 
 
 
@@ -308,33 +253,29 @@ function GetMergedUlsLOgs(){
 }
 
 #################################################
-#
+
+#main
 
 
 $srvs=$null;
-$srvs
+
 
 if(!$servers){
 
-    $srvs= Get-SPServer | ?{$_.role -ne "Invalid"};
-    $srvs;
+    $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
+    $srvs = $srvtemp.name;
+    
 }
 else{
 
     $srvs = $servers.split(',');
-    $srvs;
-
+    
 }
     
-
-#read-host
-
 foreach($server in $srvs){
 
         $server;
-        $server
-
-         try
+        try
             {
             
             
@@ -343,32 +284,55 @@ foreach($server in $srvs){
                     $events=GetEventsLogsApplication -server $server -credential $credential
                     [string]$src01 = ("\\{0}\{1}" -f $server, $events.Name) -replace ":\\", "$\"
                     $h.ForegroundColor="gray"
-                    $src01
-                    Copy-Item -Path $src01 -Destination ("{0}\{1}_{2}.evtx" -f $EventsDir, "Application", $server) -Force
+                    
+                    $destapplication = ("{0}\{1}_{2}.evtx" -f $EventsDir, "Application", $server)
+                    $newfolder = Split-Path -Path $destapplication -parent
+                    #testing
+                    $newfolder
+
+                    if(Test-Path -Path $newfolder){
+
+                    Copy-Item -Path $src01 -Destination $destapplication -Force
+                    Write-Host("-------//-------");
+                    }
+                    else{
+                        
+                        
+                        New-Item -Path $newfolder -Force -ItemType:directory | Out-Null;
+
+                        Copy-Item -Path $src01 -Destination $destapplication -Force
+                        
+                    }
             
                     # System Event viewer
                     $events = GetEventsLogsSystem -server $server -credential $credential
-                    $h.ForegroundColor="gray"
+                    $h.ForegroundColor="yellow"
                     [string]$src02 = ("\\{0}\{1}" -f $server, $events.Name) -replace ":\\", "$\"
-                    $src02
-                    Copy-Item -Path $src02 -Destination ("{0}\{1}_{2}.evtx" -f $EventsDir, "System",$server) -Force
+                    
+                    $destsystem= ("{0}\{1}_{2}.evtx" -f $EventsDir, "System",$server);
+
+                    Copy-Item -Path $src02 -Destination $destsystem -Force
+
+                    Write-Host("-------//-------");
+                    
+
+                    
                 }
             
                # IIS logs
-                if($IISdate -ne $null){
+                if($IISdate){
+                $h.ForegroundColor="green"
                 GetIISlogs -server $server -credential $credential
+                $h.ForegroundColor="Magenta"
                 }
-                else{}
+                else{Write-Host("-------//-------");}
             
           }
           catch{throw "$Error[0].Exception.Message"}
 	  
 
 }
-
-function mdb{$Error.Clear()}
-
-# Merge ULS logs	
+	
   
 if($ULSstarttime -and $ULSendtime){
 
