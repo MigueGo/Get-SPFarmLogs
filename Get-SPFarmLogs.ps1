@@ -8,11 +8,7 @@
 ######################################################################################################
 <#
 example
-.\get-spfarmlogs.ps1 -user contoso\admincc -eventsdir "C:\collectfarmlogs\logs" -IISdate 160916 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"
-
-working date 
-01/04/2017 16:00
-
+get-spfarmlogs -user contoso\admincc -eventsdir "C:\collectfarmlogs\logs" -IISdate 160916 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"
 
 
 #>
@@ -48,17 +44,7 @@ param (
     $servers=""
     
 )
-$Error.Clear();
-$h=(Get-Host).UI.RawUI
-$h.ForegroundColor="DarkYellow"
-write-host("There is a syntax example");
-write-host('get-spfarmlogs.ps1 -user "contoso\admincc" -eventsdir C:\collectfarmlogs\logs -IISdate 150910 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"');
-$h.BackgroundColor="black"
-$h.ForegroundColor="green"
 
-$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
-$credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $user, $password
-$h.ForegroundColor="gray"
 
 # load necessary modules
 try{
@@ -74,8 +60,6 @@ Import-Module webadministration
 catch{
 	$Error[0].Exception.Message
 }
-
-
 
 
 function GetEventsLogsApplication ([string]$server,[Management.Automation.PSCredential]$credential)
@@ -158,7 +142,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                             Write-Host("-------//-------");
                                             $h.ForegroundColor="green";
                                             }
-                                            else{"no entries for the site " + $website.name;Write-Host("-------//-------");}
+                                            else{$h.ForegroundColor="magenta";Write-Host(" no entries for the site " + $website.name);Write-Host("-------//-------");}
   
                                         } 
 
@@ -208,12 +192,12 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                             Write-Host("------//------")
                                             $h.ForegroundColor="green";
                                             }
-                                            else{"no entries for the site " + $line[0];Write-Host("-------//-------");}
+                                            else{$h.ForegroundColor="magenta";Write-Host(" no entries for the site " + $line[0]);Write-Host("-------//-------");}
   
                                         }                                     
                                     $h.ForegroundColor="green";
-                                    Write-Host( " ... end server $server");
-                                    Write-Host("-------//-------");
+                                    Write-Host( "... end server $server");
+                                    Write-Host("-------//-------") -ForegroundColor "green";
                                     $h.ForegroundColor="green";
                                     Remove-PSSession -Session $Session
                                     
@@ -230,6 +214,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 
 function GetMergedUlsLOgs(){
 
+    $h.ForegroundColor="green";
     $stime = $ULSstarttime -as [DateTime];
     $etime = $ULSendtime -as [DateTime];
     $mtime= get-date -Format d_M_HH_mm_ss
@@ -255,11 +240,25 @@ function GetMergedUlsLOgs(){
 #################################################
 
 #main
+#function Get-SPFarmLogs(){}
+
+$Error.Clear();
+$h=(Get-Host).UI.RawUI
+$h.ForegroundColor="DarkYellow"
+write-host("There is a syntax example");
+write-host('get-spfarmlogs.ps1 -user "contoso\admincc" -eventsdir C:\collectfarmlogs\logs -IISdate 150910 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"');
+$h.BackgroundColor="black"
+$h.ForegroundColor="green"
+
+#$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
+
+$password= ConvertTo-SecureString “P@ssw0rd1” -AsPlainText -Force
+
+$credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $user, $password
+$h.ForegroundColor="gray"
 
 
 $srvs=$null;
-
-
 if(!$servers){
 
     $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
@@ -274,7 +273,8 @@ else{
     
 foreach($server in $srvs){
 
-        $server;
+        $h.ForegroundColor="red"
+        $server ;
         try
             {
             
@@ -287,8 +287,7 @@ foreach($server in $srvs){
                     
                     $destapplication = ("{0}\{1}_{2}.evtx" -f $EventsDir, "Application", $server)
                     $newfolder = Split-Path -Path $destapplication -parent
-                    #testing
-                    $newfolder
+                    #testing                    $newfolder
 
                     if(Test-Path -Path $newfolder){
 
@@ -321,9 +320,9 @@ foreach($server in $srvs){
             
                # IIS logs
                 if($IISdate){
-                $h.ForegroundColor="green"
+                
                 GetIISlogs -server $server -credential $credential
-                $h.ForegroundColor="Magenta"
+                
                 }
                 else{Write-Host("-------//-------");}
             
@@ -344,7 +343,7 @@ if($ULSstarttime -and $ULSendtime){
 $h.BackgroundColor="black";
 $h.ForegroundColor="white";   
 
-Write-Host "script ended...";
+Write-Host "command ended...";
 
          
      
