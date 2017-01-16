@@ -6,16 +6,16 @@
 ## Syntax
 
 ```powershell 
-  .\get-spfarmlogs.ps1 -user ocsi\administrator `
+  .\get-spfarmlogs.ps1 -user contoso\administrator `
   -EventsDir "C:\folder\logs" `
   -ULSstarttime "01/13/2017 08:30" `
   -ULSendtime "01/13/2017 08:32" `
   -IISdate 17010 `
   -NoEvents:$false
-  This command permits to gather all the logs : EventViewer, IIS and ULS log  in the folder "C:\folder\logs".
+  This command permits to gather all the logs from all the Sharepoint servers : EventViewer, IIS and ULS log  in the folder "C:\folder\logs".
  ```
  ```powershell 
-   .\get-spfarmlogs.ps1 -user ocsi\administrator `
+   .\get-spfarmlogs.ps1 -user contoso\administrator `
    -EventsDir "C:\folder\logs" `
    -servers "SP,SP2" `
    -IISdate 17010 `
