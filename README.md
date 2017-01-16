@@ -29,7 +29,7 @@
 
 **this is a script to be run in PowerShell UI (like PowerShell ISE) or a Powershell window. The loading of the SharePoint module is already included in the script.**
 
-**donwload the [last realease](https://github.com/MigueGo/Get-SPFarmLogs/files/701408/Get-SPFarmLogs.zip) from here.**
+**donwload the [last realease](https://github.com/MigueGo/Get-SPFarmLogs/files/708909/Get-SPFarmLogs.zip) from here.**
 
 
 
