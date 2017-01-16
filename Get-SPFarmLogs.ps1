@@ -176,7 +176,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                                 #Create the destination folder with W3SVC and site ID
                                                 New-Item -Path $destf -Force -ItemType:directory| Out-Null;
                                                 try{
-                                                    if(Test-Path -Path $destpath){
+                                                    if(Test-Path -Path $destf){
                                                         foreach($fichier in $files){
                                                             Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
                                                         }
