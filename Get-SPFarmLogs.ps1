@@ -182,8 +182,6 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                                         }
                                                 }
                                             
-                                            
-                                            
                                             }
                                             catch{}
                                             Start-Sleep 2;
@@ -250,10 +248,7 @@ write-host('get-spfarmlogs.ps1 -user "contoso\admincc" -eventsdir C:\collectfarm
 $h.BackgroundColor="black"
 $h.ForegroundColor="green"
 
-#$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
-
-$password= ConvertTo-SecureString “P@ssw0rd1” -AsPlainText -Force
-
+$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
 $credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $user, $password
 $h.ForegroundColor="gray"
 
