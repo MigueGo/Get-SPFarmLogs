@@ -2,13 +2,13 @@
         #        This script is entended to gather farm logs                                 #
         #        it will get logs from ULS , IIS based on date and EventViewer Application   #
         #        and System.                                                                 #
-		#        Version 2.0                                                                 #
+	#        Version 2.0                                                                 #
         #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 06/01/2017 #
-		# 		 last modification : 10/01/2017                                              #
+	# 		 last modification : 10/01/2017                                      #
 ######################################################################################################
 <#
 example
-get-spfarmlogs -user contoso\admincc -eventsdir "C:\collectfarmlogs\logs" -IISdate 160916 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"
+get-spfarmlogs -user contoso\administrator -eventsdir "C:\collectfarmlogs\logs" -IISdate 160916 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"
 
 
 #>
