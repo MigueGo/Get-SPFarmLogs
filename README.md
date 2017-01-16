@@ -6,5 +6,12 @@
 ## Installation
 
 
+| -user         | user with administrator rights on all the servers | N/A|
+| -NoEvents     | syntax: -NoEvents:$true or -NoEvents:$false indicate if Application or System event viewer are required  | $false |
+| -ULSstarttime | start time for the Merge-SPLogFile command    | N/A      |
+| -ULSendtime | end time for the Merge-SPLogFile command     | N/A      |
 
 
+| -EventsDir | define the folder where the logs will be saved    | N/A |
+| -IISdate | define the wildcard value for the IIS logs to gather, i.e 17010 will collect all IIS logs between 170101 to 170109.| if not specified the IIS logs will not be collected     |
+| -servers | betwee "" specify the list of servers that will be collected, the separator is the coma (,)| if not specified all the servers of the farm will be collected   |
