@@ -2,13 +2,17 @@
         #        This script is entended to gather farm logs                                 #
         #        it will get logs from ULS , IIS based on date and EventViewer Application   #
         #        and System.                                                                 #
-	#        Version 2.0                                                                 #
+		#        Version 2.0                                                                 #
         #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 06/01/2017 #
-	# 		 last modification : 10/01/2017                                      #
+		# 		 last modification : 10/01/2017                                              #
 ######################################################################################################
 <#
 example
-get-spfarmlogs -user contoso\administrator -eventsdir "C:\collectfarmlogs\logs" -IISdate 160916 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"
+.\get-spfarmlogs.ps1 -user contoso\admincc -eventsdir "C:\collectfarmlogs\logs" -IISdate 160916 -ULSstarttime "06/30/20xx 18:30" -ULSendtime "06/30/20xx 19:30"
+
+working date 
+01/04/2017 16:00
+
 
 
 #>
@@ -122,27 +126,34 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                         {
                                             
                                             $logFilefolder="$($Website.logFile.directory)\W3SVC$($website.id)".replace("%SystemDrive%",$env:SystemDrive);
-                                            $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$IISdate*.log" 
+                                            $dates= $IISdate.Split(',');
+                                            #testing $dates;
+                                            foreach($date in $dates){
+                                            
+                                            $files = get-childItem -Path $logFilefolder -Recurse -Filter "*$date*.log";
+                                            $files.count;
                                             if((Test-Path -Path $logFilefolder) -and ($files.count -gt 0)){
-                                            #retrive the folder represented by the IIS site ID 
-                                            $folder =Split-Path -Path $logFilefolder -Leaf
-                                            #create the destination folder 
-                                            $destf = ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder)
-                                            New-Item -Path $destf -Force -ItemType:directory | Out-Null;
-                                            # copy all the files matching the willcard in $IISdate
-                                            if($destf){
-                                                foreach($fichier in $files.FullName){
-                                                    Copy-Item $fichier -Destination $destf -Force -Container:$false;
+                                                #retrive the folder represented by the IIS site ID 
+                                                $folder =Split-Path -Path $logFilefolder -Leaf
+                                                #create the destination folder 
+                                                $destf = ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder)
+                                                New-Item -Path $destf -Force -ItemType:directory | Out-Null;
+                                                # copy all the files matching the willcard in $IISdate
+                                                if($destf){
+                                                    foreach($fichier in $files){
+                                                    
+                                                        Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
                                                    
+                                                    }
                                                 }
-                                            }
 
-                                            $h.ForegroundColor="green";
-                                            Write-Host(" done for site " + $website.name);
-                                            Write-Host("-------//-------");
-                                            $h.ForegroundColor="green";
+                                                $h.ForegroundColor="green";
+                                                Write-Host(" done for site " + $website.name);
+                                                Write-Host("-------//-------");
+                                                $h.ForegroundColor="green";
                                             }
                                             else{$h.ForegroundColor="magenta";Write-Host(" no entries for the site " + $website.name);Write-Host("-------//-------");}
+                                          }  
   
                                         } 
 
@@ -169,18 +180,25 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                             $folder =Split-Path -Path $logFilefolder -Leaf;
                                             $sourcepath = ("\\" + ($server + "\C$" + $netfolder));
                                             #[bool]([System.Uri]$sourcepath).IsUnc
-                                            $files = get-childItem -Path $sourcepath -Recurse -Filter "*$IISdate*.log" ;
+                                            $dates= $IISdate.Split(',');
+                                            #testing $dates;
+                                            foreach($date in $dates){
+                                            $files = get-childItem -Path $sourcepath -Recurse -Filter "*$date*.log" ;
+                                            #testing
+                                            $files.count;
                                             if((Test-Path -Path $sourcepath) -and ($files.count -gt 0)){
                                                 
                                                 $destf = ("{0}\{1}_{2}\{3}" -f $EventsDir, "IIS", $server, $folder);
                                                 #Create the destination folder with W3SVC and site ID
                                                 New-Item -Path $destf -Force -ItemType:directory| Out-Null;
                                                 try{
-                                                    if(Test-Path -Path $destf){
+                                                     if($destf){
                                                         foreach($fichier in $files){
+                                                            
                                                             Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
                                                         }
-                                                }
+                                                    }
+                                            
                                             
                                             }
                                             catch{}
@@ -191,7 +209,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                                             $h.ForegroundColor="green";
                                             }
                                             else{$h.ForegroundColor="magenta";Write-Host(" no entries for the site " + $line[0]);Write-Host("-------//-------");}
-  
+                                          }  
                                         }                                     
                                     $h.ForegroundColor="green";
                                     Write-Host( "... end server $server");
@@ -248,7 +266,10 @@ write-host('get-spfarmlogs.ps1 -user "contoso\admincc" -eventsdir C:\collectfarm
 $h.BackgroundColor="black"
 $h.ForegroundColor="green"
 
-$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
+#$password =  read-host "Provide the password for the Admin Remote Servers " -AsSecureString ;
+
+$password= ConvertTo-SecureString “P@ssw0rd1” -AsPlainText -Force
+
 $credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $user, $password
 $h.ForegroundColor="gray"
 
@@ -315,9 +336,9 @@ foreach($server in $srvs){
             
                # IIS logs
                 if($IISdate){
-                
-                GetIISlogs -server $server -credential $credential
-                
+                        
+                        GetIISlogs -server $server -credential $credential ;
+                    
                 }
                 else{Write-Host("-------//-------");}
             
@@ -341,4 +362,7 @@ $h.ForegroundColor="white";
 Write-Host "command ended...";
 
          
+
+
+
      
