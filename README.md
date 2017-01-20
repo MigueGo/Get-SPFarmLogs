@@ -25,6 +25,8 @@
  
 ```
 
+note: important you need to run your Powershell windows in administrator mode.
+
 ## Detailed Description
 
 **this is a script to be run in PowerShell UI (like PowerShell ISE) or a Powershell window. The loading of the SharePoint module is already included in the script.**
