@@ -25,7 +25,7 @@
  
 ```
 
-note: important you need to run your Powershell windows in administrator mode.
+note: it's important to run your Powershell console in administrator mode.
 
 ## Detailed Description
 
