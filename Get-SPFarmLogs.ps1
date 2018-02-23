@@ -3,7 +3,7 @@
         #        This script is entended to gather farm logs                                 #
         #        it will get logs from ULS , IIS based on date and EventViewer Application   #
         #        and System.                                                                 #
-	    #        Version 2.5                                                                 #
+	    #        Version 3.0                                                                 #
         #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 06/01/2017 #
 		# 		 last modification : 20/02/2018                                      	     #
 ######################################################################################################
