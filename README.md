@@ -31,7 +31,7 @@ note: it's important to run your Powershell console in administrator mode.
 
 **this is a script to be run in PowerShell UI (like PowerShell ISE) or a Powershell window. The loading of the SharePoint module is already included in the script.**
 
-**donwload the [last realease](https://github.com/MigueGo/Get-SPFarmLogs/releases/download/Version-3.0/Get-SPFarmLogs.zip) from here.**
+**donwload the [last release](https://github.com/MigueGo/Get-SPFarmLogs/releases/download/Version-3.01/Get-SPFarmLogs.zip) from here.**
 
 
 
