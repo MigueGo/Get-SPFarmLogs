@@ -1,6 +1,6 @@
 
 ######################################################################################################
-        #        This script is entended to gather farm logs                                 #
+        #        This script is intended to gather farm logs                                 #
         #        it will get logs from ULS , IIS based on date and EventViewer Application   #
         #        and System.                                                                 #
 	    #        Version 3.0                                                                 #
