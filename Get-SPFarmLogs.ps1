@@ -5,7 +5,7 @@
         #        and System.                                                                 #
 	    #        Version 3.0                                                                 #
         #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 06/01/2017 #
-		# 		 last modification : 20/02/2018                                      	     #
+		# 		 last modification : 09/03/2018                                      	     #
 ######################################################################################################
 <#
 example
@@ -81,6 +81,7 @@ Write-Verbose("$defLogPath");
 function GetEventsLogs([string]$server,[Management.Automation.PSCredential]$credential,$EventType)
 {
     $h.ForegroundColor="yellow"
+	write-host"";
     Write-Host("Getting $EventType logs from $server")
     $h.ForegroundColor="gray"
     try {
@@ -115,7 +116,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
         try{
 			Write-Verbose -ForegroundColor White " - Enabling WSManCredSSP for `"$server`""
             Enable-WSManCredSSP -Role Client -Force -DelegateComputer $server | Out-Null ;
-            $Session = New-PSSession -ComputerName $server -ea Ignore > $null
+            $Session = New-PSSession -ComputerName $server -ea 0 
             # only retrive the data really need to avoid to exceed the buffer 
         }
         catch{
@@ -145,17 +146,20 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 						foreach($fichier in $files){
 							Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
 					}}}
-					catch{}
+					catch{$Error[0].Exception.Message}
 					Start-Sleep 2;
-					$h.ForegroundColor="green";
+					$h.ForegroundColor="green";					
 					Write-Host( " done for site " + ($line[0]).ToString());
 					Write-Host("------//------");
+                    
 					$h.ForegroundColor="green";                                               
 				}
 				else{
 					$h.ForegroundColor="magenta";
+					
 					Write-Host(" no entries for the site " + $line[0]);
 					Write-Host("-------//-------");
+                    write-host"";
 				}
 			}
 			$h.ForegroundColor="green";
@@ -164,7 +168,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 			$h.ForegroundColor="green";
 			Remove-PSSession -Session $Session
 		}
-		else{ #else 193
+		else{ 
 			
 			#since the WinRM is failign we need to use [ADSI] access or reading the ApplicationHost.config
 			#check the default location
@@ -215,31 +219,35 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 					    catch{ $Error[0].Exception.Message}
 					Start-Sleep 2;
 					$h.ForegroundColor="green";
-                    $sname = $node.name
+                    $sname = $node.name;
                     Write-Host "done for site $sname ";
 					Write-Host "-------//-------";
+                    write-host"";
 					}
 					else{
                     $sname = $node.name
 					Write-Host "no entries for site $sname" -ForegroundColor Red;
 					Write-Host "-------//-------";
+                    write-host"";
 					}
                                                                             
                 }#if ln 224
                 else{
                     $sname = $node.name
+					
 					Write-Host "no entries for site $sname" -ForegroundColor Red;
 					Write-Host "-------//-------";
+                    write-host"";
                 }
 							
 			}
-			} #try ln 198
+			} 
             catch{$Error[0].exception.Message}
-		}#else 193
+		}
     }
     catch{
       $h.ForegroundColor="red"
-      throw "$Error[0].Exception.Message"
+      $Error[0].Exception.Message
       Remove-PSSession -Session $Session
     }               
 }
@@ -316,7 +324,8 @@ else{
 }
     
 foreach($server in $srvs){
-	
+
+	Write-Host("-------//-------") -ForegroundColor Magenta;
     write-host("Processing the server: $server") -ForegroundColor Magenta ;
     #check if server is available to PING or fileshare access
     if(!((Test-Connection -Quiet $server -Count 2) -or (Test-Path "\\$server\c$"))) {
@@ -325,16 +334,16 @@ foreach($server in $srvs){
     else{
         #creating the folder for the server's logs
 	    $srvfolder = $EventsDir+"\"+$server
-	            try{
-    new-Item -Path $srvfolder -Force -ItemType:directory| Out-Null;
-    }
-                    catch{      
-    throw "$Error[0].Exception.Message"
-    return    
-    }
+	    try{
+        new-Item -Path $srvfolder -Force -ItemType:directory| Out-Null;
+        }
+        catch{      
+        throw "$Error[0].Exception.Message"
+        return    
+        }
         $h.ForegroundColor="green"
         try{
-		if($NoEvents -eq $false){
+			if($NoEvents -eq $false){
 			
             # get Application and System Event viewer
             $EventsType = "Application","System";
@@ -347,31 +356,21 @@ foreach($server in $srvs){
             Write-Host("-------//-------");
             }
                     }
-        #  Processing IIS logs
-        if($IISdate){
+         #  Processing IIS logs
+         if($IISdate){
 			GetIISlogs -server $server -credential $credential
-        }
-        else{Write-Host("-------//-------");}
-    }
-        catch{throw "$Error[0].Exception.Message"}
-    }
-}
-if($ULSstarttime -and $ULSendtime){
-	foreach($server in $srvs){
-    
-        write-host("Processing the server: $server") -ForegroundColor Magenta ;
-        #check if server is available to PING or fileshare access
-        if(!((Test-Connection -Quiet $server -Count 1) -or (Test-Path "\\$server\c$"))) {
-		    write-host("[$server] connection or server not available") -ForegroundColor Red;
-        }
-        else{
+            }
+         else{Write-Host("-------//-------");}
 
-	        SplitAllUls($server);
-        }
-    }
+         if($ULSstarttime -and $ULSendtime){
+			SplitAllUls($server);
+		 }
+		}        
+        catch{throw "$Error[0].Exception.Message"}
+	}
 }
+
 $h.BackgroundColor="black";
 $h.ForegroundColor="white";   
+write-host"";
 Write-Host "script ended..."
-
-
