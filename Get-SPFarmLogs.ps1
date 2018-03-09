@@ -14,7 +14,7 @@ get-spfarmlogs -user contoso\administrator `
 -eventsdir "C:\collectfarmlogs\logs" `
 -IISdate yymmdd `
 -ULSstarttime "06/30/20xx 18:30" `
--ULSendtime "06/30/20xx 19:30"
+-ULSendtime "06/30/20xx 19:30" `
 -noevents $true or $false
 
 .\Get-SPFarmLogs.ps1 -EventsDir C:\myfold\logfold -ULSstarttime "02/20/2018 19:30" -ULSendtime "02/20/2018 21:30" -NoEvents $false -IISdate 180225
