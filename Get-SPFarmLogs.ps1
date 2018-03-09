@@ -78,23 +78,20 @@ $defLogPath = $defLogPath -replace ":", "$";
 Write-Verbose("$defLogPath");
 
 
-function GetEventsLogsApplication ([string]$server,[Management.Automation.PSCredential]$credential)
+function GetEventsLogs([string]$server,[Management.Automation.PSCredential]$credential,$EventType)
 {
     $h.ForegroundColor="yellow"
-    Write-Host("Getting Application logs from $server")
+    Write-Host("Getting $EventType logs from $server")
     $h.ForegroundColor="gray"
-    if(!(Test-Connection -Quiet $server -Count 5)) {
-    throw "[$server] connection not available"
-    }
     try {
 		if($credential -and $server -ne "$env:COMPUTERNAME" ){
-			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server -credential $credential | where {$_.logfilename -eq "application"}
+			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server -credential $credential | where {$_.logfilename -eq "$EventType"}
          }
 		else{
-			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server | where {$_.logfilename -eq "application"}
+			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server | where {$_.logfilename -eq $EventType}
 		}
         if($credential -and $server -eq "$env:COMPUTERNAME" ){
-			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server | where {$_.logfilename -eq "application"}
+			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server | where {$_.logfilename -eq $EventType}
         }	
     
     }
@@ -102,45 +99,16 @@ function GetEventsLogsApplication ([string]$server,[Management.Automation.PSCred
         # we don't know how it fails then we will try with network access
         $h.ForegroundColor="red"
         "$Error[0].Exception.Message"
-        return Get-ChildItem \\$server\c$\WINDOWS\system32\winevt\Logs\Application.evtx 
+        $path = "\\$server\c$\WINDOWS\system32\winevt\Logs\" + $EventType + ".evtx"
+        return Get-ChildItem $path 
     }
 
-}
-
-function GetEventsLogsSystem ([string]$server, [Management.Automation.PSCredential]$credential)
-{
-	$h.ForegroundColor="yellow"
-	Write-Host("Getting System logs from $server")
-    $h.ForegroundColor="gray"
-    if(!(Test-Connection -Quiet $server -Count 5)) {
-    throw "[$server] connection not available"
-	return
-    }
-    try {
-		if($credential -and $server -ne "$env:COMPUTERNAME"){
-			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server  -Credential:$credential | where {$_.logfilename -eq "system"};
-		}
-		else{
-			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server | where {$_.logfilename -eq "system"};
-		}
-        if($credential -and $server -eq "$env:COMPUTERNAME" ){
-			return Get-Wmiobject -Class:Win32_NTEventLogfile -ComputerName:$server | where {$_.logfilename -eq "system"}
-        }
-		
-    }
-    catch{
-        throw "[GetEventsLogsSystem][$server] (Ligne $($_.InvocationInfo.ScriptLineNumber)) $_";
-        return Get-ChildItem \\$server\c$\WINDOWS\system32\winevt\Logs\System.evtx
-    }
 }
 
 function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$credential)
 {
     $h.ForegroundColor="yellow";
     Write-Host("Getting IIS logs from $server") -ForegroundColor Green;
-    if(!(Test-Connection -Quiet $server -Count 3)) {
-		throw "[$server] connection not available";
-    }
     try{
 		# we need to check if remote PowerShell is possible to the remote server
         $Session=$null;
@@ -280,12 +248,14 @@ function SplitAllUls($server)
  {
     # location to save the files based on the Server name
     Write-Verbose("logs will be saved in $srvfolder");
-    Write-Host("Gettings ULS logs ...") -ForegroundColor darkYellow
+    $srvfolder = $EventsDir+"\"+$server;
+    Write-Host("Gettings ULS logs from $server ...") -ForegroundColor darkYellow
     $defLogPath = $defLogPath -replace ":", "$"
     $sourceFold = "\\" + $server + "\" + $defLogPath
 	write-verbose $sourceFold
     if(Test-Path -Path $sourceFold){
-		"Getting ready to copy logs from: " + $sourceFold
+		"-------------"
+        "Getting ready to copy logs from: " + $sourceFold
 		""
 		# subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
 		$ULSstarttime = $ULSstarttime.Replace('"', "")
@@ -305,7 +275,7 @@ function SplitAllUls($server)
 		foreach($file in $specfiles)
 			{
 				$filename = $file.name
-				Write-Verbose("Copying file:  " + $filename);
+                Write-host("Copying file:  " + $filename) -ForegroundColor Green;
 				copy-item "$sourceFold\$filename" $srvfolder -Force
 			}     
 	}
@@ -337,7 +307,7 @@ $credential = new-object -typename System.Management.Automation.PSCredential -ar
 $h.ForegroundColor="gray"
 }
 $srvs=$null;
-if(!$servers -or $servers -eq $null){
+if(!$servers){
     $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
     $srvs = $srvtemp.name;
 }
@@ -346,51 +316,62 @@ else{
 }
     
 foreach($server in $srvs){
-	#creating the folder for the server's logs
-	$srvfolder = $EventsDir+"\"+$server
-	try{
+	
+    write-host("Processing the server: $server") -ForegroundColor Magenta ;
+    #check if server is available to PING or fileshare access
+    if(!((Test-Connection -Quiet $server -Count 2) -or (Test-Path "\\$server\c$"))) {
+		write-host("[$server] connection or server not available") -ForegroundColor Red;
+    }
+    else{
+        #creating the folder for the server's logs
+	    $srvfolder = $EventsDir+"\"+$server
+	            try{
     new-Item -Path $srvfolder -Force -ItemType:directory| Out-Null;
     }
-    catch{      
+                    catch{      
     throw "$Error[0].Exception.Message"
     return    
     }
-    $h.ForegroundColor="green"
-    write-host("processing the server: $server") -ForegroundColor Magenta ;
-    try{
+        $h.ForegroundColor="green"
+        try{
 		if($NoEvents -eq $false){
-			# Application Event viewer
-			$events = GetEventsLogsApplication -server $server -credential $credential
-            [string]$src01 = ("\\{0}\{1}" -f $server, $events.Name) -replace ":\\", "$\"
-            $h.ForegroundColor="gray"
-            $destapplication = ("{0}\{1}_{2}.evtx" -f $srvfolder, "Application", $server)
-            Copy-Item -Path $src01 -Destination $destapplication -Force
+			
+            # get Application and System Event viewer
+            $EventsType = "Application","System";
+            foreach($EvType in $EventsType){
+            $events = GetEventsLogs -server $server -credential $credential -EventType $EvType;
+            [string]$src01 = ("\\{0}\{1}" -f $server, $events.name) -replace ":\\", "$\";
+            $h.ForegroundColor="gray";
+            $destEvType = ("{0}\{1}_{2}.evtx" -f $srvfolder, $EvType, $server);
+            Copy-Item -Path $src01 -Destination $destEvType -Force;
             Write-Host("-------//-------");
-            
-            # SystemEvent viewer
-			$events = GetEventsLogsSystem -server $server -credential $credential
-            $h.ForegroundColor="yellow"
-            [string]$src02 = ("\\{0}\{1}" -f $server, $events.Name) -replace ":\\", "$\"
-            $destsystem= ("{0}\{1}_{2}.evtx" -f $srvfolder, "System",$server);
-            Copy-Item -Path $src02 -Destination $destsystem -Force
-            Write-Host("-------//-------");
-        }
+            }
+                    }
         #  Processing IIS logs
         if($IISdate){
 			GetIISlogs -server $server -credential $credential
         }
         else{Write-Host("-------//-------");}
     }
-    catch{throw "$Error[0].Exception.Message"}
+        catch{throw "$Error[0].Exception.Message"}
+    }
 }
 if($ULSstarttime -and $ULSendtime){
 	foreach($server in $srvs){
-	    SplitAllUls($server);
+    
+        write-host("Processing the server: $server") -ForegroundColor Magenta ;
+        #check if server is available to PING or fileshare access
+        if(!((Test-Connection -Quiet $server -Count 1) -or (Test-Path "\\$server\c$"))) {
+		    write-host("[$server] connection or server not available") -ForegroundColor Red;
+        }
+        else{
+
+	        SplitAllUls($server);
+        }
     }
 }
 $h.BackgroundColor="black";
 $h.ForegroundColor="white";   
-Write-Host "script ended...";
+Write-Host "script ended..."
 
-         
-  
+
