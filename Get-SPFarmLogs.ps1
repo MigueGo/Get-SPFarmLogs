@@ -328,6 +328,7 @@ foreach($server in $srvs){
 	Write-Host("-------//-------") -ForegroundColor Magenta;
     write-host("Processing the server: $server") -ForegroundColor Magenta ;
     #check if server is available to PING or fileshare access
+	$server = $server.trim()
     if(!((Test-Connection -Quiet $server -Count 2) -or (Test-Path "\\$server\c$"))) {
 		write-host("[$server] connection or server not available") -ForegroundColor Red;
     }
