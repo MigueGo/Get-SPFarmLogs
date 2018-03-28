@@ -2,18 +2,21 @@
 # Get-SPFarmLogs
 
 **This script permits to collect multiple kind of logs in a SharePoint farm or for a group of servers. You have an extended farm and you need to collect logs in each one of your 5, 6 or 10 servers. It’s a waste of time to logon one by one to do that!! With this script you can collect Farm’s Logs to a centralized folder.**
+** **
 **donwload the [last release](https://github.com/MigueGo/Get-SPFarmLogs/releases/latest) from here.**
 
 ## Syntax
 
 ```powershell 
-  .\get-spfarmlogs.ps1 -user contoso\administrator `
+  .\get-spfarmlogs.ps1  `
   -EventsDir "C:\folder\logs" `
-  -ULSstarttime "01/13/2017 08:30" `
-  -ULSendtime "01/13/2017 08:32" `
-  -IISdate 17010 `
-  -NoEvents:$false
-  This command permits to gather all the logs from all the Sharepoint servers : EventViewer, IIS and ULS log  in the folder "C:\folder\logs".
+  -ULSstarttime "01/13/2018 08:30" `
+  -ULSendtime "01/13/2018 09:32" `
+  -IISdate 18010 `
+  -NoEvents:$false `
+  -Servers "SP,SQL,DC"
+
+  This command permits to gather all the logs from all the specified servers : EventViewer, IIS and ULS log  in the folder "C:\folder\logs".
  ```
  ```powershell 
    .\get-spfarmlogs.ps1 -user contoso\administrator `
