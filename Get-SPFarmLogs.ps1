@@ -315,9 +315,9 @@ $credential = new-object -typename System.Management.Automation.PSCredential -ar
 $h.ForegroundColor="gray"
 }
 $srvs=$null;
-if(!$servers){
+if(!$servers -or ($server -eq $null)){
     $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
-    $srvs = $srvtemp.name;
+    $srvs = $srvtemp.Address;
 }
 else{
     $srvs = $servers.split(',');
