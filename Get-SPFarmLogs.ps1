@@ -170,7 +170,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 		}
 		else{ 
 			
-			#since the WinRM is failign we need to use [ADSI] access or reading the ApplicationHost.config
+			#since the WinRM is failing we need to use [ADSI] access or reading the ApplicationHost.config
 			#check the default location
 			# if there is no files prompt user to specify the IIS logs folder
 			$sites=$null
@@ -315,7 +315,8 @@ $credential = new-object -typename System.Management.Automation.PSCredential -ar
 $h.ForegroundColor="gray"
 }
 $srvs=$null;
-if(!$servers -or ($server -eq $null)){
+
+if(!$servers -or ($servers -eq $null)){
     $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
     $srvs = $srvtemp.Address;
 }
