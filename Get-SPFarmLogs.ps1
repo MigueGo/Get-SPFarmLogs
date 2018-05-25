@@ -318,7 +318,7 @@ $srvs=$null;
 
 if(!$servers -or ($servers -eq $null)){
     $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
-    $srvs = $srvtemp.Address;
+    $srvs = $srvtemp | select address -ExpandProperty address;
 }
 else{
     $srvs = $servers.split(',');
