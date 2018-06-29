@@ -314,11 +314,10 @@ $password =  read-host "Provide the password for the Admin Remote Servers " -AsS
 $credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $user, $password
 $h.ForegroundColor="gray"
 }
-$srvs=$null;
+$srvs="";
 
 if(!$servers -or ($servers -eq $null)){
-    $srvtemp= Get-SPServer | ?{$_.role -ne "Invalid"} ;
-    $srvs = $srvtemp | select address -ExpandProperty address;
+    $srvs= get-spserver | ?{$_.Role -ne "Invalid"} | % {$_.Address};
 }
 else{
     $srvs = $servers.split(',');
