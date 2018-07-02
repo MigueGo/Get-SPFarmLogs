@@ -322,8 +322,10 @@ if(!$servers -or ($servers -eq $null)){
 else{
     $srvs = $servers.split(',');
 }
-    
-foreach($server in $srvs){
+
+try{
+    if($srvs -or $srvs -eq ""){   
+                                                                                                                                                                            foreach($server in $srvs){
 
 	Write-Host("-------//-------") -ForegroundColor Magenta;
     write-host("Processing the server: $server") -ForegroundColor Magenta ;
@@ -368,6 +370,17 @@ foreach($server in $srvs){
 		}        
         catch{throw "$Error[0].Exception.Message"}
 	}
+    }
+    }
+
+    else{
+	    write-host("Unexpected situation, there is no targeted server"); 
+	    write-host("you can define the switch -servers ""server1,server2,server3"" to be sure that the script can be run"); 
+    }
+}
+catch{
+	$errormessage = $_.Exception.Message
+	write-Verbose "An error occurred: $errormessage"
 }
 
 $h.BackgroundColor="black";
