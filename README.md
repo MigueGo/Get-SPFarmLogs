@@ -10,8 +10,8 @@
 ```powershell 
   .\get-spfarmlogs.ps1  `
   -EventsDir "C:\folder\logs" `
-  -ULSstarttime "01/13/2018 08:30" `
-  -ULSendtime "01/13/2018 09:32" `
+  -ULSstarttime "01/jan/2018 08:30" `
+  -ULSendtime "01/jan/2018 09:32" `
   -IISdate 18010 `
   -NoEvents:$false `
   -Servers "SP,SQL,DC"
@@ -46,8 +46,8 @@ note: it's important to run your Powershell console in administrator mode.
 | -EventsDir    | define the folder where the logs will be saved. If the folder doesn't exist it will be created   | N/A |
 | -IISdate      | this is a multivalue switch, between "" you can add different time date. it also defines the wildcard value for the IIS logs to gather, i.e 17010 will collect all IIS logs between 170101 to 170109. The default format in IIS is YYMMDD |if not specified the IIS logs will not be collected     |
 | -servers      | between quotation mark "" you specify the list of the servers that will be collected, the separator is the coma (,)| if not specified all the servers of the farm will be collected   |
-| -ULSstarttime | start time for collection ULS logs in each server of the list. Time is local time on the server. ex: 23/jan/2018 14:15:30  | N/A      |
-| -ULSendtime   | end time for collection ULS logs in each server of the list. Time is local time on the server. ex: 23/jan/2018 14:30:00 | N/A      |
+| -ULSstarttime | start time for collection ULS logs in each server of the list. Time is local time on the server. ex: "23/jan/2019 14:15:30"  | N/A      |
+| -ULSendtime   | end time for collection ULS logs in each server of the list. Time is local time on the server. ex: "23/jan/2019 14:30:00" | N/A      |
 
 
 
