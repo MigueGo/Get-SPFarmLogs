@@ -10,8 +10,8 @@
 ```powershell 
   .\get-spfarmlogs.ps1  `
   -EventsDir "C:\folder\logs" `
-  -ULSstarttime "01/jan/2018 08:30" `
-  -ULSendtime "01/jan/2018 09:32" `
+  -ULSstarttime "01/jan/2019 08:30" `
+  -ULSendtime "01/jan/2019 09:32" `
   -IISdate 18010 `
   -NoEvents:$false `
   -Servers "SP,SQL,DC"
