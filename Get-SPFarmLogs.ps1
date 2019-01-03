@@ -5,7 +5,7 @@
         #        and System.                                                                 #
 	    #        Version 3.0                                                                 #
         #        provided by Miguel Godinho / Sharepoint SEE at Microsoft Support 06/01/2017 #
-		# 		 last modification : 09/03/2018                                      	     #
+		# 		 last modification : 03/01/2019                                      	     #
 ######################################################################################################
 <#
 example
@@ -111,69 +111,12 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
     $h.ForegroundColor="yellow";
     Write-Host("Getting IIS logs from $server") -ForegroundColor Green;
     try{
-		# we need to check if remote PowerShell is possible to the remote server
-        $Session=$null;
-        try{
-			Write-Verbose -ForegroundColor White " - Enabling WSManCredSSP for `"$server`""
-            Enable-WSManCredSSP -Role Client -Force -DelegateComputer $server | Out-Null ;
-            $Session = New-PSSession -ComputerName $server -ea 0 
-            # only retrive the data really need to avoid to exceed the buffer 
-        }
-        catch{
-			Write-Verbose("we are not able to use PS remote session");
-        }
-        Write-Verbose "before testing session"
-        Write-Verbose "$session"
-        if($session){
-			$block = { 
-			Import-Module 'webAdministration' -ErrorAction 0;
-			get-website | %{($_.name + ";" + $_.id + ";" +  $_.logFile.directory)}
-			}
-			$rsites = Invoke-Command -Session $Session -ScriptBlock $block; 
-			foreach($WebSite in $rsites){
-				$line = $WebSite.split(';');
-				$logFilefolder="$($line[2])\W3SVC$($line[1])".replace("%SystemDrive%",$env:SystemDrive)
-				$netfolder = Split-Path -Path $logFilefolder -noQualifier;
-				$folder =Split-Path -Path $logFilefolder -Leaf;
-				$sourcepath = ("\\" + ($server + "\C$" + $netfolder));
-				$files = get-childItem -Path $sourcepath -Recurse -Filter "*$IISdate*.log" ;
-				if((Test-Path -Path $sourcepath) -and ($files.count -gt 0)){
-					$destf = ("{0}\{1}_{2}\{3}" -f $srvfolder, "IIS", $server, $folder);
-					#Create the destination folder with W3SVC and site ID
-					New-Item -Path $destf -Force -ItemType:directory| Out-Null;
-					try{
-					if(Test-Path -Path $destf){
-						foreach($fichier in $files){
-							Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
-					}}}
-					catch{$Error[0].Exception.Message}
-					Start-Sleep 2;
-					$h.ForegroundColor="green";					
-					Write-Host( " done for site " + ($line[0]).ToString());
-					Write-Host("------//------");
-                    
-					$h.ForegroundColor="green";                                               
-				}
-				else{
-					$h.ForegroundColor="magenta";
 					
-					Write-Host(" no entries for the site " + $line[0]);
-					Write-Host("-------//-------");
-                    write-host"";
-				}
-			}
-			$h.ForegroundColor="green";
-			Write-Host( "... end server $server");
-			Write-Host("-------//-------") -ForegroundColor "blue";
-			$h.ForegroundColor="green";
-			Remove-PSSession -Session $Session
-		}
-		else{ 
+			# we need to use [ADSI] access for reading the ApplicationHost.config
+			# check the default location
 			
-			#since the WinRM is failing we need to use [ADSI] access or reading the ApplicationHost.config
-			#check the default location
-			# if there is no files prompt user to specify the IIS logs folder
 			$sites=$null
+            
             try{
             [xml]$web=get-content "\\$server\admin$\system32\inetsrv\config\applicationhost.config"
 			$deffold=$null;
@@ -187,9 +130,15 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 			write-verbose $deffold
 			$iispath = @{};
 			$allnodes = $allnodes | ?{$_.id}
-			foreach($node in $allnodes){
+            $iismapfile = ("{0}\{1}_{2}" -f $EventsDir, $server, "_iismapping.txt");
+            $null | Out-File $iismapfile -Force
+            
+            foreach($node in $allnodes){
 				
-                $node.name
+                "----//----"
+                "processing " + $node.name;
+                
+                $node.name + " -----> " + $node.bindings.binding.protocol +" ---> " + $node.bindings.binding.bindingInformation | Out-File $iismapfile -Append
                 ""
                 $foldFormat =  "W3SVC" + $node.id;                
                 if($node.logFile.directory -eq $null){
@@ -200,7 +149,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
                 write-verbose $ttemp                                                        
                 }
 				$iisNTpath = "\\$server\" + $ttemp + "\" +$foldFormat;
-                write-verbose $iisNTpath
+                write-verbose "processing $iisNTpath";
                 if(Test-Path -Path $iisNTpath){
 					$files = get-childItem -Path $iisNTpath -Filter "*$IISdate*.log" ;
                     if($files.count -gt 0){
@@ -211,8 +160,11 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 					    try{
 						    if(Test-Path -Path $destf){
 							    foreach($fichier in $files){
-								    $fchfull = $fichier.FullName;
-								    Copy-Item $fichier.FullName -Destination $destf -Force -Container:$false;
+								    $renamefile = "$server" + "_"  + $fichier.Name
+                                    Write-Verbose "copying the file $fichier.name"
+                                    $destination = ("{0}\{1}" -f $destf,$renamefile)
+                                    Write-Verbose $destination 
+								    Copy-Item $fichier.FullName -Destination $destination -Force -Container:$false;
 							    }
 						    }
                         }
@@ -239,11 +191,11 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 					Write-Host "-------//-------";
                     write-host"";
                 }
-							
+				
 			}
 			} 
             catch{$Error[0].exception.Message}
-		}
+		
     }
     catch{
       $h.ForegroundColor="red"
@@ -293,6 +245,27 @@ function SplitAllUls($server)
         "------//------"
     }
  }
+
+function IISmapping()
+{
+    $iissites=Get-ChildItem -Path IIS:\Sites ;
+    Foreach($iissite in $iissites){
+    $wname=$null
+    $w=$null
+
+    $id = $iissite.id;
+    $logdir=($iissite.logFile).directory;
+    $logpath= $logdir+"\W3SVC"+$id;
+    $wname=$iissite.name;
+    $w= get-SPWebApplication -IncludeCentralAdministration| ?{$_.displayname -eq "$wname"};
+    if($w){
+    $iissite.name + " : " + $w.url +" <--> " +($logpath.Split('\)')[4])}
+    else{} ;
+    }
+    
+}
+
+
 
 #################################################
 
@@ -367,6 +340,7 @@ try{
          if($ULSstarttime -and $ULSendtime){
 			SplitAllUls($server);
 		 }
+         
 		}        
         catch{throw "$Error[0].Exception.Message"}
 	}
