@@ -13,11 +13,11 @@ get-spfarmlogs -user contoso\administrator `
 -server "server1,server2,server3"
 -eventsdir "C:\collectfarmlogs\logs" `
 -IISdate yymmdd `
--ULSstarttime "06/30/20xx 18:30" `
--ULSendtime "06/30/20xx 19:30" `
+-ULSstarttime "20/jan/2019 19:30" `
+-ULSendtime "20/jan/2019 21:30" `
 -noevents $true or $false
 
-.\Get-SPFarmLogs.ps1 -EventsDir C:\myfold\logfold -ULSstarttime "02/20/2018 19:30" -ULSendtime "02/20/2018 21:30" -NoEvents $false -IISdate 180225
+.\Get-SPFarmLogs.ps1 -EventsDir C:\myfold\logfold -ULSstarttime "20/jan/2019 19:30" -ULSendtime "20/jan/2019 21:30" -NoEvents $false -IISdate 190120
 #>
 
 param (
@@ -246,27 +246,6 @@ function SplitAllUls($server)
     }
  }
 
-function IISmapping()
-{
-    $iissites=Get-ChildItem -Path IIS:\Sites ;
-    Foreach($iissite in $iissites){
-    $wname=$null
-    $w=$null
-
-    $id = $iissite.id;
-    $logdir=($iissite.logFile).directory;
-    $logpath= $logdir+"\W3SVC"+$id;
-    $wname=$iissite.name;
-    $w= get-SPWebApplication -IncludeCentralAdministration| ?{$_.displayname -eq "$wname"};
-    if($w){
-    $iissite.name + " : " + $w.url +" <--> " +($logpath.Split('\)')[4])}
-    else{} ;
-    }
-    
-}
-
-
-
 #################################################
 
 #main
@@ -277,7 +256,7 @@ $h=(Get-Host).UI.RawUI
 $h.ForegroundColor="DarkYellow"
 
 write-host("There is a syntax example");
-write-host('.\Get-SPFarmLogs.ps1 -EventsDir C:\myfold\logfold -ULSstarttime "02/20/2018 19:30" -ULSendtime "02/20/2018 21:30" -NoEvents $false -IISdate 180225');
+write-host('.\Get-SPFarmLogs.ps1 -EventsDir C:\myfold\logfold -ULSstarttime "20/jan/2019 19:30" -ULSendtime "20/jan/2019 21:30" -NoEvents $false -IISdate 190120');
 
 $h.BackgroundColor="black"
 $h.ForegroundColor="green"
