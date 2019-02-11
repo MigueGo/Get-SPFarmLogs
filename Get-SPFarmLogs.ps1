@@ -142,7 +142,7 @@ Start-SPAssignment -Global
 # folders 
 
 $defLogPath = $ulsPath -replace "%CommonProgramFiles%", "C$\Program Files\Common Files"
-Write-Host("ULS logs are at \\server\" + $defLogPath");
+Write-Host("ULS logs are at \\server\" + $defLogPath);
 
 function GetEventsLogs([string]$server,[Management.Automation.PSCredential]$credential,$EventType)
 
