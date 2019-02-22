@@ -41,98 +41,60 @@ get-spfarmlogs -user contoso\administrator `
 
 
 param (
-
-
-
 	[Parameter(Mandatory=$false)]
-
     [string]
-
     $NoEvents=$false
-
     ,
-
     [parameter(Mandatory=$false)]
-
     [string] 
-
     $user=""
-
     ,
-
     [Parameter(Mandatory=$true)]
-
     [string] 
-
     $EventsDir=""
-
     ,
-
     [Parameter(Mandatory=$false)]
-
     [string]
-
     $IISdate=$null
-
     , 
-
     [Parameter(Mandatory=$false)]
-
     [string]
-
     $ULSstarttime="" 
-
     ,
-
     [Parameter(Mandatory=$false)]
-
     [string]
-
     $ULSendtime=""
-
 	,
-
     [Parameter(Mandatory=$false)]
-
     [string]
-
     $servers=""
-
-    
-
 )
+# monitor log
+
+$loggingfile = $EventsDir +"\loggingfile.log"
 
 
+function logmig($event){
+	
+	"[$(Get-Date)]$event"| out-file $loggingfile -append;	
 
-
+}
 
 # load necessary modules
-
 try{
 
 # load SharePoint Module
-
 if(-not(Get-PSSnapin | Where { $_.Name -eq "Microsoft.SharePoint.PowerShell"}))
-
 {Add-PSSnapin Microsoft.SharePoint.Powershell -ea 0}
-
 # load IIS module
-
 Import-Module webadministration
-
 }
 
 catch{
-
 	$Error[0].Exception.Message
-
 }
 
-
-
 # variables
-
-
 
 $spDiag = get-spdiagnosticconfig
 $global:ulsPath = $spDiag.LogLocation
@@ -144,6 +106,7 @@ Start-SPAssignment -Global
 $defLogPath = $ulsPath -replace "%CommonProgramFiles%", "C$\Program Files\Common Files"
 $defLogPath= $defLogPath.replace(':','$');
 Write-Host("ULS logs are at \\server\" + $defLogPath);
+
 
 function GetEventsLogs([string]$server,[Management.Automation.PSCredential]$credential,$EventType)
 
@@ -201,9 +164,8 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 
     $h.ForegroundColor="yellow";
     Write-Host("Getting IIS logs from $server") -ForegroundColor Green;
+	logmig ("Getting IIS logs from $server")
     try{
-
-					
 
 			# we need to use [ADSI] access for reading the ApplicationHost.config
 			# check the default location
@@ -212,7 +174,7 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
             try{
 
             [xml]$web=get-content "\\$server\admin$\system32\inetsrv\config\applicationhost.config"
-
+			logmig "\\$server\admin$\system32\inetsrv\config\applicationhost.config" ;
 			$deffold=$null;
 			$logfile =($web.configuration."system.applicationHost".sites.siteDefaults.logFile.directory)
 			$deffold = $logfile -replace "%SystemDrive%","$env:SystemDrive";
@@ -244,8 +206,11 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 
 				$iisNTpath = "\\$server\" + $ttemp + "\" +$foldFormat;
                 write-verbose "processing $iisNTpath";
+                logmig("processing $iisNTpath");
                 if(Test-Path -Path $iisNTpath){
-					$files = get-childItem -Path $iisNTpath -Filter "*$IISdate*.log" ;
+					
+                    $files = get-childItem -Path $iisNTpath -Filter "*$IISdate*.log" ;
+                    logmig("there is " + $files.count + " IIS's logs to precess");
 
                     if($files.count -gt 0){
 
@@ -253,72 +218,62 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 					    #Create the destination folder with W3SVC and site ID
                         New-Item -Path $destf -Force -ItemType:directory| Out-Null;
 					    Write-Host $destf
+					    logmig $destf                                    
 					    try{
 
 						    if(Test-Path -Path $destf){
 
 							    foreach($fichier in $files){
-
-								    $renamefile = "$server" + "_"  + $fichier.Name
-                                    Write-Verbose "copying the file $fichier.name"
-                                    $destination = ("{0}\{1}" -f $destf,$renamefile)
-                                    Write-Verbose $destination 
-								    Copy-Item $fichier.FullName -Destination $destination -Force -Container:$false;
-
+								$renamefile = "$server" + "_"  + $fichier.Name
+                                Write-Verbose "copying the file $fichier.name"
+                                $destination = ("{0}\{1}" -f $destf,$renamefile)
+                                Write-Verbose $destination 
+								Copy-Item $fichier.FullName -Destination $destination -Force -Container:$false;
+								logmig($fichier.fullname + " -- " + $destination)
 							    }
-
 						    }
-
                         }
-
 					    catch{ $Error[0].Exception.Message}
-
 						Start-Sleep 2;
-
 						$h.ForegroundColor="green";
 						$sname = $node.name;
 						Write-Host "done for site $sname ";
+                        logmig("done for site $sname ");
 						Write-Host "-------//-------";
 						write-host"";
 					}
-
 					else{
                     $sname = $node.name
 					Write-Host "no entries for site $sname" -ForegroundColor Red;
 					Write-Host "-------//-------";
                     write-host"";
-
 					}
-
-                                                                            
-
                 }
-
                 else{
-
                     $sname = $node.name
 					Write-Host "no entries for site $sname" -ForegroundColor Red;
 					Write-Host "-------//-------";
                     write-host"";
-
                 }
 			}
 			} 
-            catch{$Error[0].exception.Message}
+            catch{
+			$Error[0].exception.Message
+			logmig("$Error[0].Exception.Message")
+			}
 
     }
 
     catch{
       $h.ForegroundColor="red"
       $Error[0].Exception.Message
+	  logmig("$Error[0].Exception.Message")
       Remove-PSSession -Session $Session
     }               
 
 }
 
-function SplitAllUls($server)
-
- {
+function SplitAllUls($server){
 
     # location to save the files based on the Server name
     Write-Verbose("logs will be saved in $srvfolder");
@@ -330,8 +285,8 @@ function SplitAllUls($server)
 
 		"-------------"
 
-        "Getting ready to copy logs from: " + $sourceFold
-
+        write-host("Getting ready to copy logs from: " + $sourceFold);
+        logmig("Getting ready to copy logs from: " + $sourceFold);
 		""
 
 		# subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
@@ -345,23 +300,17 @@ function SplitAllUls($server)
 		$eTime = Get-Date $ULSendtime;
 		$specfiles = get-childitem -path $sourceFold | ?{$_.Extension -eq ".log" -and ($_.Name) -like "$server*" -and $_.CreationTime -lt $eTime -and $_.CreationTime -ge $sTime}  | select Name, CreationTime
 
-		if($specfiles.Length -eq 0)
-
-		{
-
-			" We did not find any ULS logs for server, " + $server +  ", within the given time range"
-
+		if($specfiles.Length -eq 0){
+			write-host(" We did not find any ULS logs for server, " + $server +  ", within the given time range")
+			logmig(" We did not find any ULS logs for server, " + $server +  ", within the given time range")
 		}
 
-		foreach($file in $specfiles)
-
-			{
-
-				$filename = $file.name
-                Write-host("Copying file:  " + $filename) -ForegroundColor Green;
-				copy-item "$sourceFold\$filename" $srvfolder -Force
-
-			}     
+		foreach($file in $specfiles){
+			$filename = $file.name
+            Write-host("Copying file:  " + $filename) -ForegroundColor Green;
+			logmig("Copying file:  " + $filename) -ForegroundColor Green;
+			copy-item "$sourceFold\$filename" $srvfolder -Force
+		}     
 
 	}
 
@@ -374,15 +323,15 @@ function SplitAllUls($server)
 
  }
 
+################################
+#        main program          #
+################################
 
+new-Item -Path $eventsdir -Force -ItemType:directory| Out-Null;
+$null | Out-File $loggingfile -force
 
-#################################################
-
-
-
-#main
-
-#function Get-SPFarmLogs(){}
+logmig "starting logging"
+logmig $defLogPath;
 
 $Error.Clear();
 $h=(Get-Host).UI.RawUI
@@ -404,6 +353,7 @@ $srvs="";
 if(!$servers -or ($servers -eq $null)){
 
    $srvs= get-spserver | ?{$_.Role -ne "Invalid"} | % {$_.Address};
+   
 }
 else{
     $srvs = $servers.split(',');
@@ -412,26 +362,27 @@ else{
 try{
 
     if($srvs -or $srvs -eq ""){   
-
-                                                                                                                                     foreach($server in $srvs){
+	
+	foreach($server in $srvs){
+	
 	Write-Host("-------//-------") -ForegroundColor Magenta;
-
     write-host("Processing the server: $server") -ForegroundColor Magenta ;
+    logmig("Processing the server: $server")
 
     #check if server is available to PING or fileshare access
 
 	if(!((Test-Connection -Quiet $server -Count 2) -or (Test-Path "\\$server\c$"))) {
 
 		write-host("[$server] connection or server not available") -ForegroundColor Red;
+        logmig("[$server] connection or server not available")
 
     }
 
     else{
 
         #creating the folder for the server's logs
-
-	    $srvfolder = $EventsDir+"\"+$server
-
+        $srvfolder = $EventsDir+"\"+$server
+        logmig("creating folder $srvfolder")
 	    try{
 
         new-Item -Path $srvfolder -Force -ItemType:directory| Out-Null;
@@ -439,9 +390,8 @@ try{
         }
 
         catch{      
-
         throw "$Error[0].Exception.Message"
-
+        logmig("$Error[0].Exception.Message")
         return    
 
         }
@@ -451,57 +401,61 @@ try{
         try{
 
 			if($NoEvents -eq $false){
-
-			
-
             # get Application and System Event viewer
-
             $EventsType = "Application","System";
 
-            foreach($EvType in $EventsType){
+				foreach($EvType in $EventsType){
 
-            $events = GetEventsLogs -server $server -credential $credential -EventType $EvType;
+				logmig("getting event viewer $EvType")
+				$events = GetEventsLogs -server $server -credential $credential -EventType $EvType;
+                [string]$src01 = ("\\{0}\{1}" -f $server, $events.name) -replace ":\\", "$\";
+				$h.ForegroundColor="gray";
+				$destEvType = ("{0}\{1}_{2}.evtx" -f $srvfolder, $EvType, $server);
+				if($credential){
 
-            [string]$src01 = ("\\{0}\{1}" -f $server, $events.name) -replace ":\\", "$\";
+                     $remfolder = Split-Path -parent $src01
+                     if(!(Test-Path -Path v:)){
+                     New-PSDrive -Name v -PSProvider filesystem -Root $remfolder  -Credential $credential -Scope local 
+                     } 
+                     Copy-Item -Path "v:\$EvType.evtx" -Destination $destEvType -Force ;
+                }
+                else{
+                    Copy-Item -Path $src01 -Destination $destEvType -Force
+                }
 
-            $h.ForegroundColor="gray";
-
-            $destEvType = ("{0}\{1}_{2}.evtx" -f $srvfolder, $EvType, $server);
-
-            Copy-Item -Path $src01 -Destination $destEvType -Force;
-
-            Write-Host("-------//-------");
-
-            }
-
-                    }
+				Write-Host("-------//-------");
+				}	
+			}
 
          #  Processing IIS logs
          if($IISdate){
+            
+            logmig("processing IIS logs for $server start")
+		    GetIISlogs -server $server -credential $credential;
+            logmig("processing IIS logs for $server end")
 
-			GetIISlogs -server $server -credential $credential
-
-            }
+         }
          else{Write-Host("-------//-------");}
          if($ULSstarttime -and $ULSendtime){
-
+            
+            logmig("getting ULS logs started now...")
 			SplitAllUls($server);
+            logmig("getting ULS logs finished now...")
 
 		 }
 		}        
-        catch{throw "$Error[0].Exception.Message"}
+        catch{throw "$Error[0].Exception.Message"
+        logmig("$Error[0].Exception.Message")
+        }
 
 	}
-
     }
-
     }
-
     else{
-
 	    write-host("Unexpected situation, there is no targeted server"); 
+        logmig("Unexpected situation, there is no targeted server");
 	    write-host("you can define the switch -servers ""server1,server2,server3"" to be sure that the script can be run"); 
-
+        logmig("you can define the switch -servers ""server1,server2,server3"" to be sure that the script can be run"); 
     }
 
 }
@@ -510,6 +464,7 @@ catch{
 
 	$errormessage = $_.Exception.Message
 	write-Verbose "An error occurred: $errormessage"
+    logmig("An error occurred: $errormessage");
 }
 
 
@@ -518,3 +473,4 @@ $h.BackgroundColor="black";
 $h.ForegroundColor="white";   
 write-host"";
 Write-Host "script ended..."
+logmig( "script ended...")
