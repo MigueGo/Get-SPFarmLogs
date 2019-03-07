@@ -292,12 +292,13 @@ function SplitAllUls($server){
 		# subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
 		$ULSstarttime = $ULSstarttime.Replace('"', "")
 		$ULSstarttime = $ULSstarttime.Replace("'", "")
-		$sTime = (Get-Date $ULSstarttime).AddMinutes(-$LogCutInterval)
+		$sTime = [datetime](Get-Date $ULSstarttime -Format "dd/MMM/yyyy hh:mm");
+        $sTime= $sTime.AddMinutes(-$LogCutInterval)
 
 		# setting the endTime variable
 		$ULSendtime = $ULSendtime.Replace('"', "");
 		$ULSendtime = $ULSendtime.Replace("'", "");
-		$eTime = Get-Date $ULSendtime;
+		$eTime =  [datetime](Get-Date $ULSendtime -Format "dd/MMM/yyyy hh:mm") ;
 		$specfiles = get-childitem -path $sourceFold | ?{$_.Extension -eq ".log" -and ($_.Name) -like "$server*" -and $_.CreationTime -lt $eTime -and $_.CreationTime -ge $sTime}  | select Name, CreationTime
 
 		if($specfiles.Length -eq 0){
@@ -457,17 +458,13 @@ try{
 	    write-host("you can define the switch -servers ""server1,server2,server3"" to be sure that the script can be run"); 
         logmig("you can define the switch -servers ""server1,server2,server3"" to be sure that the script can be run"); 
     }
-
 }
-
 catch{
 
 	$errormessage = $_.Exception.Message
 	write-Verbose "An error occurred: $errormessage"
     logmig("An error occurred: $errormessage");
 }
-
-
 
 $h.BackgroundColor="black";
 $h.ForegroundColor="white";   
