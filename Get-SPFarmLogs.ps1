@@ -297,7 +297,7 @@ function SplitAllUls($server){
 
 		# setting the endTime variable
 		$ULSendtime = $ULSendtime.Replace('"', "");
-		$ULSendtime = $ULSendtime.Replace("'", "");
+		$ULSendtime = $ULSendtime.Replace("'", "") ;
 		$eTime =  [datetime](Get-Date $ULSendtime -Format "dd/MMM/yyyy hh:mm") ;
 		$specfiles = get-childitem -path $sourceFold | ?{$_.Extension -eq ".log" -and ($_.Name) -like "$server*" -and $_.CreationTime -lt $eTime -and $_.CreationTime -ge $sTime}  | select Name, CreationTime
 
