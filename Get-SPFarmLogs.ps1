@@ -288,17 +288,21 @@ function SplitAllUls($server){
         write-host("Getting ready to copy logs from: " + $sourceFold);
         logmig("Getting ready to copy logs from: " + $sourceFold);
 		""
+		# be sure to get the date in the right format due to many issue depending in local CultureInfo
+		$CultureDateTimeFormat = (Get-Culture).DateTimeFormat
+        $DateFormat = $CultureDateTimeFormat.ShortDatePattern
+        $TimeFormat = $CultureDateTimeFormat.LongTimePattern
+        $DateTimeFormat = "$DateFormat $TimeFormat"
 
 		# subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
 		$ULSstarttime = $ULSstarttime.Replace('"', "")
 		$ULSstarttime = $ULSstarttime.Replace("'", "")
-		$sTime = [datetime](Get-Date $ULSstarttime -Format "dd/MMM/yyyy HH:mm");
-        $sTime= $sTime.AddMinutes(-$LogCutInterval)
+		$sTime= ([datetime](Get-Date $ULSstarttime -Format $DateTimeFormat)).AddMinutes(-$LogCutInterval)
 
 		# setting the endTime variable
 		$ULSendtime = $ULSendtime.Replace('"', "");
 		$ULSendtime = $ULSendtime.Replace("'", "") ;
-		$eTime =  [datetime](Get-Date $ULSendtime -Format "dd/MMM/yyyy HH:mm") ;
+		$eTime = [datetime](Get-Date $ULSendtime -Format $DateTimeFormat);
 		$specfiles = get-childitem -path $sourceFold | ?{$_.Extension -eq ".log" -and ($_.Name) -like "$server*" -and $_.CreationTime -lt $eTime -and $_.CreationTime -ge $sTime}  | select Name, CreationTime
 
 		if($specfiles.Length -eq 0){
