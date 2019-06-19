@@ -290,9 +290,9 @@ function SplitAllUls($server){
 		""
 		# be sure to get the date in the right format due to many issue depending in local CultureInfo
 		$CultureDateTimeFormat = (Get-Culture).DateTimeFormat
-        $DateFormat = $CultureDateTimeFormat.ShortDatePattern
-        $TimeFormat = $CultureDateTimeFormat.LongTimePattern
-        $DateTimeFormat = "$DateFormat $TimeFormat"
+		$DateFormat = $CultureDateTimeFormat.ShortDatePattern
+		$TimeFormat = $CultureDateTimeFormat.LongTimePattern
+		$DateTimeFormat = "$DateFormat $TimeFormat"
 
 		# subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
 		$ULSstarttime = $ULSstarttime.Replace('"', "")
