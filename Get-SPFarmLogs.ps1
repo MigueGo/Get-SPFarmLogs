@@ -58,11 +58,11 @@ param (
     $IISdate=$null
     , 
     [Parameter(Mandatory=$false)]
-    [string]
+    [datetime]
     $ULSstarttime="" 
     ,
     [Parameter(Mandatory=$false)]
-    [string]
+    [datetime]
     $ULSendtime=""
 	,
     [Parameter(Mandatory=$false)]
@@ -288,22 +288,10 @@ function SplitAllUls($server){
         write-host("Getting ready to copy logs from: " + $sourceFold);
         logmig("Getting ready to copy logs from: " + $sourceFold);
 		""
-		# be sure to get the date in the right format due to many issue depending in local CultureInfo
-		$CultureDateTimeFormat = (Get-Culture).DateTimeFormat
-		$DateFormat = $CultureDateTimeFormat.ShortDatePattern
-		$TimeFormat = $CultureDateTimeFormat.LongTimePattern
-		$DateTimeFormat = "$DateFormat $TimeFormat"
-
-		# subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
-		$ULSstarttime = $ULSstarttime.Replace('"', "")
-		$ULSstarttime = $ULSstarttime.Replace("'", "")
-		$sTime= ([datetime](Get-Date $ULSstarttime -Format $DateTimeFormat)).AddMinutes(-$LogCutInterval)
-
-		# setting the endTime variable
-		$ULSendtime = $ULSendtime.Replace('"', "");
-		$ULSendtime = $ULSendtime.Replace("'", "") ;
-		$eTime = [datetime](Get-Date $ULSendtime -Format $DateTimeFormat);
-		$specfiles = get-childitem -path $sourceFold | ?{$_.Extension -eq ".log" -and ($_.Name) -like "$server*" -and $_.CreationTime -lt $eTime -and $_.CreationTime -ge $sTime}  | select Name, CreationTime
+		#subtracting the 'LogCutInterval' value to ensure that we grab enough ULS data 
+		$sTime=$ULSstarttime.AddMinutes(-$LogCutInterval)
+		# setting the endTime variable # removed since we force $ulsendtiem to be DateTime type
+		$specfiles = get-childitem -path $sourceFold | ?{$_.Extension -eq ".log" -and ($_.Name) -like "$server*" -and $_.CreationTime -lt $ULSendtime -and $_.CreationTime -ge $sTime}  | select Name, CreationTime
 
 		if($specfiles.Length -eq 0){
 			write-host(" We did not find any ULS logs for server, " + $server +  ", within the given time range")
