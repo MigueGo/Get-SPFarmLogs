@@ -59,11 +59,11 @@ param (
     , 
     [Parameter(Mandatory=$false)]
     [datetime]
-    $ULSstarttime="" 
+    $ULSstarttime 
     ,
     [Parameter(Mandatory=$false)]
     [datetime]
-    $ULSendtime=""
+    $ULSendtime
 	,
     [Parameter(Mandatory=$false)]
     [string]
