@@ -190,20 +190,15 @@ function GetIISlogs ([string]$server, [Management.Automation.PSCredential]$crede
 
                 "----//----"
                 "processing " + $node.name;
-                $node.name + " -----> " + $node.bindings.binding.protocol +" ---> " + $node.bindings.binding.bindingInformation | Out-File $iismapfile -Append
-                ""
-                $foldFormat =  "W3SVC" + $node.id;                
+                $node.name + " -----> " + $node.id + " -----> " + $node.bindings.binding.protocol +" ---> " + $node.bindings.binding.bindingInformation | Out-File $iismapfile -Append
+				$foldFormat =  "W3SVC" + $node.id;                
                 if($node.logFile.directory -eq $null){
-
 					$ttemp = $deffold.replace(":","$");                    
-
 				}
-
                 else{
                 $ttemp= $node.logFile.directory;
                 write-verbose $ttemp                                                        
                 }
-
 				$iisNTpath = "\\$server\" + $ttemp + "\" +$foldFormat;
                 write-verbose "processing $iisNTpath";
                 logmig("processing $iisNTpath");
