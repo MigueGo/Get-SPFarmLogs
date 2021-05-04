@@ -28,6 +28,20 @@
     this command permits to gather the EventViewer and IIS logs in the folder "C:\folder\logs" for the servers SP and SP2, there is no ULS logs collected.
  
 ```
+```powershell 
+    $starttime = (Get-Date "03/may/2021 09:00"); #specify the estimated time that the issue started 
+    $endtime = (Get-Date "03/may/2021 09:15"); #specify the estimated time that the issue ended
+    $iisdate = $EndTime.ToString("yyMMdd");
+    $ftag = $EndTime.ToString("yyMMdd-HHmm");
+    
+  .\get-spfarmlogs.ps1  -EventsDir "c:\temp\logs\MSLogs_$foldertag" `
+    -ULSstarttime $StartTime  `
+    -ULSendtime $EndTime  `
+    -IISdate $iisdate  `
+    -NoEvents:$false 
+
+  This command permits to gather all the logs from all servers of the farm : EventViewer, IIS and ULS log  in the folder "c:\temp\logs\MSLogs_$foldertag".
+ ```
 
 note: it's important to run your Powershell console in administrator mode.
 
